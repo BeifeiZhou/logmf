@@ -190,9 +190,8 @@ class LogMF():
             A = np.exp(A)
             A /= (A + ones)
             Rank = (-1*A).argsort().argsort()
-            Sort = A.T[::-1].T
-            
-            top50 = np.nonzero(Rank < 50)[1].reshape(self.l_K, 50)
+            Order = (-1*A).argsort()
+            top50 = Order[:,range(50)]
             def map_back(x):
                 items = map(lambda xx: str(self.dict_I[xx]), x)
                 return ','.join(items)
@@ -215,8 +214,11 @@ class LogMF():
     def correlation(self):
         output_corr = open('corr.txt','w')
         cos = pairwise_distances(self.item_vectors, metric="cosine")
-        Rank = cos.argsort().argsort()
-        top50 = np.nonzero(Rank < 50)[1].reshape(self.l_i, 50)
+#        Rank = cos.argsort().argsort()
+        Order = cos.argsort()
+        top50 = Order[:,range(50)]
+
+#        top50 = np.nonzero(Rank < 50)[1].reshape(self.l_i, 50)
         def map_back(x):
             items = map(lambda xx: str(self.dict_I[xx]), x)
             return ','.join(items)
@@ -227,21 +229,20 @@ class LogMF():
     def WriteVectors(self):
         sc.parallelize(self.user_vectors.tolist())\
                 .map(lambda x: ','.join(map(str, x)))\
-                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/data/user_vec')
+                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/code_logmf/user_vec')
         sc.parallelize(self.item_vectors.tolist())\
                 .map(lambda x: ','.join(map(str, x)))\
-                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/data/item_vec')
+                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/code_logmf/item_vec')
         sc.parallelize(self.user_biases.tolist())\
                 .map(lambda x: ','.join(map(str, x)))\
-                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/data/user_bias')
+                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/code_logmf/user_bias')
         sc.parallelize(self.item_biases.tolist())\
                 .map(lambda x: ','.join(map(str, x)))\
-                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/data/item_bias')
+                .saveAsTextFile('/Users/nali/Beifei/ximalaya2015/code_ximalaya/code_logmf/item_bias')
     
-logmf = LogMF('/Users/nali/Beifei/ximalaya2015/code_ximalaya/data/trainMarch17.txt',9,2, 20)
+logmf = LogMF('/Users/nali/Beifei/ximalaya2015/code_ximalaya/data/trainMarch17.txt',9,2, 20, iterations=50)
 logmf.mapping()
 logmf.train_model()
-logmf.WriteVectors()
 a = logmf.Prob_Sort_MPR()
 open('MPR.txt','w').write(str(a))
 time_e = time.time()
@@ -249,5 +250,6 @@ print "running time is %.2f seconds" % (time_e - time_b)
 logmf.correlation()
 result = (logmf.user_vectors, logmf.item_vectors, logmf.user_biases, logmf.item_biases)
 pickle.dump(result, open('result.pkl','wb'))
-result = pickle.load(open('result.pkl','rb'))
+#result = pickle.load(open('result.pkl','rb'))
+logmf.WriteVectors()
 print "running time is %.2f seconds" % (time_e - time_b)
